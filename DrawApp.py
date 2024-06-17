@@ -312,6 +312,11 @@ class DrawApp:
                     "hovered_bg": "rgb(232,17,35)",
                 }
             },
+            '@panel_window.#title_bar': {
+                "colours": {
+                    "normal_bg": "rgb(229,243,255)",
+                }
+            },
             "button": {
                 "colours": {
                     "normal_bg": "#F3F3F3",
@@ -352,7 +357,6 @@ class DrawApp:
                         "hovered_normal": "0.2"
                     }
                 }
-
             },
             "label": {
                 "colours": {
@@ -370,11 +374,24 @@ class DrawApp:
 
                 "misc": {
                     "shape": "rounded_rectangle",
-                    "shape_corner_radius": "10",
-                    "border_width": "1",
-                    "shadow_width": "15",
-                    "title_bar_height": "20"
+                    #         "shape_corner_radius": "10",
+                    #         "border_width": "1",
+                    #         "shadow_width": "15",
+                    #         "title_bar_height": "20"
                 }
+            },
+            "selection_list": {
+                "colours": {
+                    "dark_bg": "#F9F9F9",
+                    "normal_border": "#999999"
+                },
+            },
+            "text_entry_line": {
+                "colours": {
+                    "dark_bg": "#fff",
+                    "normal_text": "#000",
+                    "text_cursor": "#000"
+                },
             }
         }
         self.theme['@delete_button'] = self.theme['#close_button']
