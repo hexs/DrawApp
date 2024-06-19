@@ -524,6 +524,15 @@ class DrawApp:
             self.dp = pg.display.set_mode(self.window_size.tolist(), pg.RESIZABLE)
             self.manager.set_window_resolution(self.window_size.tolist())
 
+    def get_can_wheel(self):
+        return not any([obj.rect.collidepoint(self.mouse_pos) for obj in [
+            self.panel0,
+            self.panel1,
+            self.panel2,
+            self.show_list_button,
+            self.show_details_button
+        ]])
+
     def wheel_drawing_moving(self, event):
         # mouse pos เทียบกับซ้ายบน  _px
         self.mouse_pos = np.array(pg.mouse.get_pos())
@@ -534,9 +543,7 @@ class DrawApp:
         # left of img pos เทียบกับซ้ายบน  _px
         self.left_img_pos = self.canter_img_pos - self.img_size_vector / 2
 
-        self.can_wheel = not any([obj.rect.collidepoint(self.mouse_pos) for obj in
-                                  [self.panel0, self.panel1, self.panel2, self.show_list_button,
-                                   self.show_details_button]])
+        self.can_wheel = self.get_can_wheel()
 
         if self.can_wheel:
             # drawing
@@ -682,7 +689,7 @@ class DrawApp:
             self.dp.fill((180, 180, 180))
             # get image surface
             # self.get_surface_from_display_capture()
-            self.get_surface_from_file('img.png')
+            self.get_surface_from_file('image/img (1).jpg')
 
             events = pg.event.get()
             for event in events:
