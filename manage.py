@@ -10,7 +10,7 @@ import pygame as pg
 
 
 def manage(filename):
-    img = cv2.imread(os.path.join('image',filename))
+    img = cv2.imread(os.path.join('image', filename))
     with open("frame_dict.json") as f:
         string = f.read()
     frame = json.loads(string)
@@ -57,13 +57,17 @@ class Manage(DrawApp):
             self.panel2,
             self.show_list_button,
             self.show_details_button,
-            self.next_button
+
+            self.next_button,
+            self.manage_button
         ]])
 
     def setup_ui(self):
         super().setup_ui()
-        self.next_button = UIButton(relative_rect=Rect((400, 20), (50, 30)), text='Next', manager=self.manager)
-        self.manage_button = UIButton(relative_rect=Rect((450, 20), (50, 30)), text='Manage', manager=self.manager)
+        self.next_button = UIButton(relative_rect=Rect((100, 0), (70, 30)), text='Next', manager=self.manager,
+                                    anchors={'left_target': self.show_list_button})
+        self.manage_button = UIButton(relative_rect=Rect((0, 0), (70, 30)), text='Manage', manager=self.manager,
+                                      anchors={'left_target': self.next_button})
 
     def run(self):
         listdir = os.listdir('image')
@@ -93,6 +97,11 @@ class Manage(DrawApp):
                             listdir_n = 0
                     if event.ui_element == self.manage_button:
                         manage(listdir[listdir_n])
+                        listdir_n += 1
+                        if listdir_n == len(listdir):
+                            listdir_n = 0
+                        self.frame_dict = {}
+                        self.set_item_list()
 
             self.panels(events)
             self.show_rects_to_surface(self.frame_dict)

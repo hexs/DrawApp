@@ -3,4 +3,5 @@
 __pycache__/
 */__pycache__/
 crop/
+output/
 frame_dict.json

@@ -398,7 +398,7 @@ class DrawApp:
         return self.theme
 
     def set_panel0(self):
-        self.panel0 = UIWindow(rect=Rect((0, 0), (200, 200)),
+        self.panel0 = UIWindow(rect=Rect((0, 0), (230, 200)),
                                manager=self.manager, resizable=True,
                                window_display_title='Details',
                                object_id=ObjectID(class_id='@panel_window',
@@ -422,7 +422,7 @@ class DrawApp:
         self.t7 = UILabel(Rect((85, 24 * 6), (200, 24)), container=self.panel0, text=f':')
 
     def set_panel1(self):
-        self.panel1 = UIWindow(rect=Rect((0, 200), (200, 350)),
+        self.panel1 = UIWindow(rect=Rect((0, 200), (230, 350)),
                                manager=self.manager, resizable=True,
                                window_display_title='List',
                                object_id=ObjectID(class_id='@panel_window',
@@ -430,7 +430,7 @@ class DrawApp:
                                )
         self.panel1.minimum_dimensions = (230, 300)
 
-        self.rect_list = UISelectionListWithDelete(relative_rect=Rect(4, 4, 190, 250),
+        self.rect_list = UISelectionListWithDelete(relative_rect=Rect(4, 4, 220, 250),
                                                    item_list=list(self.frame_dict.keys()),
                                                    manager=self.manager,
                                                    container=self.panel1,
@@ -439,7 +439,7 @@ class DrawApp:
                                                             'bottom': 'bottom',
                                                             'right': 'right',
                                                             })
-        self.name_entry = UITextEntryLine(relative_rect=Rect((4, -65), (190, 30)),
+        self.name_entry = UITextEntryLine(relative_rect=Rect((4, -65), (220, 30)),
                                           manager=self.manager,
                                           container=self.panel1,
                                           anchors={'left': 'left',
@@ -461,7 +461,7 @@ class DrawApp:
                                                'left_target': self.add_button})
 
     def set_panel2(self):
-        self.panel2 = UIWindow(rect=Rect((0, 550), (200, 350)),
+        self.panel2 = UIWindow(rect=Rect((0, 550), (230, 350)),
                                manager=self.manager, resizable=True,
                                window_display_title='Manual',
                                object_id=ObjectID(class_id='@panel_window',
@@ -481,9 +481,13 @@ class DrawApp:
         self.set_panel2()
 
         # panel0 Manual
-        self.show_details_button = UIButton(relative_rect=Rect((0, 0), (50, 30)), text='Details', manager=self.manager)
+        self.show_details_button = UIButton(relative_rect=Rect((300, 0), (70, 30)), text='Details',
+                                            manager=self.manager)
+        self.show_details_button.disable()
         # panel1 Manual
-        self.show_list_button = UIButton(relative_rect=Rect((0, 200), (50, 30)), text='Lists', manager=self.manager)
+        self.show_list_button = UIButton(relative_rect=Rect((0, 0), (70, 30)), text='Lists', manager=self.manager,
+                                         anchors={'left_target': self.show_details_button})
+        self.show_list_button.disable()
         # panel2 Manual
 
     def set_item_list(self):
@@ -595,6 +599,18 @@ class DrawApp:
 
     def panels(self, events):
         for event in events:
+            # enable or disable
+            if event.type == 32867:
+                if event.ui_object_id == '#details.panel_window.#close_button':
+                    self.show_details_button.enable()
+                if event.ui_object_id == '#rect_list.panel_window.#close_button':
+                    self.show_list_button.enable()
+            if event.type == UI_BUTTON_PRESSED:
+                if event.ui_element == self.show_details_button:
+                    self.show_details_button.disable()
+                if event.ui_element == self.show_list_button:
+                    self.show_list_button.disable()
+
             # add item in frame_dict
             if event.type == UI_BUTTON_PRESSED and event.ui_element == self.add_button:
                 name = self.name_entry.get_text()
