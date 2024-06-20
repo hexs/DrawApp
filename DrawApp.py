@@ -2,6 +2,8 @@ import json
 import math
 import os
 import random
+
+import cv2
 import numpy as np
 from PIL import ImageGrab, Image
 from typing import Union, Dict, Tuple, List, Optional, Any
@@ -516,6 +518,24 @@ class DrawApp:
             int(self.img_surface.get_width() * self.scale_factor),
             int(self.img_surface.get_height() * self.scale_factor)))
 
+    def setup_video(self, path):
+        self.capture = cv2.VideoCapture(path)
+
+    def get_npimage(self):
+        _, img = self.capture.read()
+        if _:
+            self.img = img
+        else:
+            self.img = np.full((500, 500, 3), [0, 255, 0], dtype=np.uint8)
+            print('can not get image')
+
+    def get_surface(self):
+        self.get_npimage()
+        self.img_surface = pg.image.frombuffer(self.img.tobytes(), self.img.shape[1::-1], "BGR")
+        self.scaled_img_surface = pg.transform.scale(self.img_surface, (
+            int(self.img_surface.get_width() * self.scale_factor),
+            int(self.img_surface.get_height() * self.scale_factor)))
+
     def handle_window_resize(self, event):
         minimum = (500, 500)
         if event.type == pg.VIDEORESIZE:
@@ -705,7 +725,8 @@ class DrawApp:
             self.dp.fill((180, 180, 180))
             # get image surface
             # self.get_surface_from_display_capture()
-            self.get_surface_from_file('image/img (1).jpg')
+            # self.get_surface_from_file('image/img (1).jpg')
+            self.get_surface()
 
             events = pg.event.get()
             for event in events:
@@ -729,4 +750,5 @@ class DrawApp:
 
 if __name__ == "__main__":
     app = DrawApp()
+    app.setup_video('http://192.168.225.137:2000/video')
     app.run()
