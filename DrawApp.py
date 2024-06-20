@@ -306,6 +306,7 @@ class DrawApp:
         self.drawing = False
         self.moving = False
         self.is_running = True
+        self.img = np.full((500, 500, 3), [0, 255, 0], dtype=np.uint8)
 
     def setup_theme(self):
         self.theme = {
@@ -525,9 +526,6 @@ class DrawApp:
         _, img = self.capture.read()
         if _:
             self.img = img
-        else:
-            self.img = np.full((500, 500, 3), [0, 255, 0], dtype=np.uint8)
-            print('can not get image')
 
     def get_surface(self):
         self.get_npimage()
