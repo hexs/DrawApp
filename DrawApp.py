@@ -307,7 +307,7 @@ class DrawApp:
         self.drawing = False
         self.moving = False
         self.is_running = True
-        self.img = np.full((500, 500, 3), [0, 255, 0], dtype=np.uint8)
+        self.img_np = np.full((500, 500, 3), [0, 255, 0], dtype=np.uint8)
 
     def setup_theme(self):
         self.theme = {
@@ -520,29 +520,21 @@ class DrawApp:
             int(self.img_surface.get_width() * self.scale_factor),
             int(self.img_surface.get_height() * self.scale_factor)))
 
-    def setup_video(self, path):
-        self.capture = cv2.VideoCapture(path)
+    def setup_cap(self, path):
+        self.cap = cv2.VideoCapture(path)
 
-    def get_npimage(self):
-        _, img = self.capture.read()
+    def get_np_form_cap(self):
+        _, img = self.cap.read()
         if _:
-            self.img = img
-
-    def get_surface(self):
-        self.get_npimage()
-        self.img_surface = pg.image.frombuffer(self.img.tobytes(), self.img.shape[1::-1], "BGR")
-        self.scaled_img_surface = pg.transform.scale(self.img_surface, (
-            int(self.img_surface.get_width() * self.scale_factor),
-            int(self.img_surface.get_height() * self.scale_factor)))
+            self.img_np = img
 
     def get_np_form_url(self, url):
         req = urllib.request.urlopen(url)
         arr = np.asarray(bytearray(req.read()), dtype=np.uint8)
-        img_np = cv2.imdecode(arr, -1)
-        return img_np
+        self.img_np = cv2.imdecode(arr, -1)
 
-    def get_surface_form_np(self, img):
-        self.img_surface = pg.image.frombuffer(img.tobytes(), img.shape[1::-1], "BGR")
+    def get_surface_form_np(self):
+        self.img_surface = pg.image.frombuffer(self.img_np.tobytes(), self.img_np.shape[1::-1], "BGR")
         self.scaled_img_surface = pg.transform.scale(self.img_surface, (
             int(self.img_surface.get_width() * self.scale_factor),
             int(self.img_surface.get_height() * self.scale_factor)))
@@ -738,8 +730,8 @@ class DrawApp:
             # self.get_surface_from_display_capture()
             # self.get_surface_from_file('image/img (1).jpg')
             # self.get_surface()
-            img = self.get_np_form_url('http://192.168.225.137:2000/old-image')
-            self.get_surface_form_np(img)
+            self.get_np_form_url('http://192.168.225.137:2000/old-image')
+            self.get_surface_form_np()
             events = pg.event.get()
             for event in events:
                 self.manager.process_events(event)
@@ -762,5 +754,4 @@ class DrawApp:
 
 if __name__ == "__main__":
     app = DrawApp()
-    app.setup_video('http://192.168.225.137:2000/video')
     app.run()
