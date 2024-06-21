@@ -2,6 +2,7 @@ import json
 import math
 import os
 import random
+import urllib.request
 
 import cv2
 import numpy as np
@@ -534,6 +535,18 @@ class DrawApp:
             int(self.img_surface.get_width() * self.scale_factor),
             int(self.img_surface.get_height() * self.scale_factor)))
 
+    def get_np_form_url(self, url):
+        req = urllib.request.urlopen(url)
+        arr = np.asarray(bytearray(req.read()), dtype=np.uint8)
+        img_np = cv2.imdecode(arr, -1)
+        return img_np
+
+    def get_surface_form_np(self, img):
+        self.img_surface = pg.image.frombuffer(img.tobytes(), img.shape[1::-1], "BGR")
+        self.scaled_img_surface = pg.transform.scale(self.img_surface, (
+            int(self.img_surface.get_width() * self.scale_factor),
+            int(self.img_surface.get_height() * self.scale_factor)))
+
     def handle_window_resize(self, event):
         minimum = (500, 500)
         if event.type == pg.VIDEORESIZE:
@@ -724,8 +737,9 @@ class DrawApp:
             # get image surface
             # self.get_surface_from_display_capture()
             # self.get_surface_from_file('image/img (1).jpg')
-            self.get_surface()
-
+            # self.get_surface()
+            img = self.get_np_form_url('http://192.168.225.137:2000/old-image')
+            self.get_surface_form_np(img)
             events = pg.event.get()
             for event in events:
                 self.manager.process_events(event)

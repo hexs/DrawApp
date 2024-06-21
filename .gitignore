@@ -4,4 +4,7 @@ __pycache__/
 */__pycache__/
 crop/
 output/
+
 frame_dict.json
+class_names.json
+model_name.h5
