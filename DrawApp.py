@@ -309,6 +309,10 @@ class DrawApp:
         self.is_running = True
         self.img_np = np.full((500, 500, 3), [0, 255, 0], dtype=np.uint8)
 
+        self.can_drawing = True
+        self.can_moving = True
+        self.can_zoom = True
+
     def setup_theme(self):
         self.theme = {
             '#close_button': {
@@ -574,32 +578,35 @@ class DrawApp:
 
         if self.can_wheel:
             # drawing
-            if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
-                self.drawing = True
-                self.start_point = self.get_point_on_img_surface()
-                self.stop_point = self.start_point
+            if self.can_drawing:
+                if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+                    self.drawing = True
+                    self.start_point = self.get_point_on_img_surface()
+                    self.stop_point = self.start_point
             # moving
-            if event.type == pg.MOUSEBUTTONDOWN and event.button in [2, 3]:
-                self.moving = True
+            if self.can_moving:
+                if event.type == pg.MOUSEBUTTONDOWN and event.button in [2, 3]:
+                    self.moving = True
 
             # zoom in / zoom out
-            if event.type == pg.MOUSEWHEEL:
-                factor = (1 + event.y / 10)
-                self.scale_factor *= factor
-                a = self.img_size_vector
-                a1 = self.mouse_pos - self.left_img_pos
-                b = a * factor
-                b1 = a1 * factor
-                canter_img_pos_b = self.mouse_pos - b1 + b / 2
-                offset = self.canter_img_pos - canter_img_pos_b
-                self.img_offset_vector = self.img_offset_vector - offset
+            if self.can_zoom:
+                if event.type == pg.MOUSEWHEEL:
+                    factor = (1 + event.y / 10)
+                    self.scale_factor *= factor
+                    a = self.img_size_vector
+                    a1 = self.mouse_pos - self.left_img_pos
+                    b = a * factor
+                    b1 = a1 * factor
+                    canter_img_pos_b = self.mouse_pos - b1 + b / 2
+                    offset = self.canter_img_pos - canter_img_pos_b
+                    self.img_offset_vector = self.img_offset_vector - offset
 
-                # update img_size_vector
-                self.scaled_img_surface = pg.transform.scale(self.img_surface, (
-                    int(self.img_surface.get_width() * self.scale_factor),
-                    int(self.img_surface.get_height() * self.scale_factor)
-                ))
-                self.img_size_vector = np.array(self.scaled_img_surface.get_size())
+                    # update img_size_vector
+                    self.scaled_img_surface = pg.transform.scale(self.img_surface, (
+                        int(self.img_surface.get_width() * self.scale_factor),
+                        int(self.img_surface.get_height() * self.scale_factor)
+                    ))
+                    self.img_size_vector = np.array(self.scaled_img_surface.get_size())
 
         # moving
         if self.moving:
