@@ -12,8 +12,7 @@ import pygame as pg
 from numpy import ndarray, dtype
 from pygame import Rect
 from pygame_gui import UIManager, UI_BUTTON_PRESSED
-from pygame_gui.elements import UITextEntryLine, UIWindow, UIImage, UILabel
-from pygame_gui.elements import UIButton
+from pygame_gui.elements import UITextEntryLine, UIWindow, UIImage, UILabel, UIButton
 from pygame_gui.elements.ui_selection_list import UISelectionList
 from pygame_gui.elements.ui_vertical_scroll_bar import UIVerticalScrollBar
 from pygame_gui.core import UIElement, UIContainer

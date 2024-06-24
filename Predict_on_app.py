@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from pygame import Rect
 from pygame_gui import UI_BUTTON_PRESSED
-from pygame_gui.elements import UIButton, UIDropDownMenu
+from pygame_gui.elements import UIButton, UIDropDownMenu, UIPanel
 from keras import models
 from pygame_gui.elements.ui_drop_down_menu import UIClosedDropDownState
 
@@ -51,11 +51,11 @@ class Predict(DrawApp):
                                        anchors={'left_target': self.show_list_button})
         self.auto_predict_button = UIButton(relative_rect=Rect((0, 0), (70, 30)), text='Auto', manager=self.manager,
                                             anchors={'left_target': self.predict_button})
-
+        r_panel = UIPanel(relative_rect=Rect((0, 0), (70, 90)), starting_height=1, manager=self.manager)
         self.r_buttons = [
-            UIButton(relative_rect=Rect((0, 0), (70, 30)), text='xxxxxxx', manager=self.manager),
-            UIButton(relative_rect=Rect((0, 0), (70, 30)), text='yyyyyyy', manager=self.manager),
-            UIButton(relative_rect=Rect((0, 0), (70, 30)), text='zzzzzzz', manager=self.manager),
+            UIButton(relative_rect=Rect((0, 0), (70, 30)), text='xxxxxxx', container=r_panel),
+            UIButton(relative_rect=Rect((0, 0), (70, 30)), text='yyyyyyy', container=r_panel),
+            UIButton(relative_rect=Rect((0, 0), (70, 30)), text='zzzzzzz', container=r_panel),
 
         ]
         for r_button in self.r_buttons:
@@ -130,16 +130,14 @@ class Predict(DrawApp):
 
                 if event.type == pg.MOUSEBUTTONUP:
                     if event.button == 3:
-                        pos = self.mouse_pos
+                        pos = np.array([0, 0])
                         for r_button in self.r_buttons:
                             r_button.set_position(pos)
-                            r_button.show()
                             pos += [0, 30]
-                if event.type == pg.MOUSEBUTTONDOWN:
-                    pos = np.array([0, 0]).tolist()
-                    for r_button in self.r_buttons:
-                        r_button.set_position(pos)
-                        r_button.hide()
+                # if event.type == pg.MOUSEBUTTONDOWN:
+                #     pos = np.array([0, 0]).tolist()
+                #     for r_button in self.r_buttons:
+                #         r_button.set_position(pos)
 
             if self.auto_predict_button.text == 'Stop':
                 self.predict()
