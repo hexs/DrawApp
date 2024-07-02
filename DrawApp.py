@@ -3,7 +3,6 @@ import math
 import os
 import random
 import urllib.request
-
 import cv2
 import numpy as np
 from PIL import ImageGrab, Image
@@ -12,9 +11,8 @@ import pygame as pg
 from numpy import ndarray, dtype
 from pygame import Rect
 from pygame_gui import UIManager, UI_BUTTON_PRESSED
-from pygame_gui.elements import UITextEntryLine, UIWindow, UIImage, UILabel, UIButton
-from pygame_gui.elements.ui_selection_list import UISelectionList
-from pygame_gui.elements.ui_vertical_scroll_bar import UIVerticalScrollBar
+from pygame_gui.elements import UITextEntryLine, UIWindow, UIImage, UILabel, UIButton, UIPanel, UIHorizontalSlider, \
+    UISelectionList, UIVerticalScrollBar
 from pygame_gui.core import UIElement, UIContainer
 from pygame_gui.core.ui_element import ObjectID
 from pygame_gui.core.gui_type_hints import RectLike
@@ -24,75 +22,33 @@ from pygame_gui.core.interfaces import IContainerLikeInterface, IUIManagerInterf
 def draw_dashed_line(surf, color, start_pos, end_pos, width=1, dash_length=5):
     x1, y1 = start_pos
     x2, y2 = end_pos
-    dl = dash_length
 
-    if (x1 == x2):
-        y_coordinates = [y for y in range(y1, y2, dl if y1 < y2 else -dl)]
-        x_coordinates = [x1] * len(y_coordinates)
-    elif (y1 == y2):
-        x_coordinates = [x for x in range(x1, x2, dl if x1 < x2 else -dl)]
-        y_coordinates = [y1] * len(x_coordinates)
+    if x1 == x2:
+        points = [(x1, y) for y in range(y1, y2, dash_length if y1 < y2 else -dash_length)]
+    elif y1 == y2:
+        points = [(x, y1) for x in range(x1, x2, dash_length if x1 < x2 else -dash_length)]
     else:
-        a = abs(x2 - x1)
-        b = abs(y2 - y1)
-        c = round(math.sqrt(a ** 2 + b ** 2))
-        dx = dl * a / c
-        dy = dl * b / c
+        length = np.hypot(x2 - x1, y2 - y1)
+        dash_count = int(length / dash_length)
+        t = np.linspace(0, 1, dash_count)
+        points = [(int(x1 + (x2 - x1) * ti), int(y1 + (y2 - y1) * ti)) for ti in t]
 
-        x_coordinates = [x for x in np.arange(x1, x2, dx if x1 < x2 else -dx)]
-        y_coordinates = [y for y in np.arange(y1, y2, dy if y1 < y2 else -dy)]
-
-    next_coordinates = list(zip(x_coordinates[1::2], y_coordinates[1::2]))
-    last_coordinates = list(zip(x_coordinates[0::2], y_coordinates[0::2]))
-    for (x1, y1), (x2, y2) in zip(next_coordinates, last_coordinates):
-        start = (round(x1), round(y1))
-        end = (round(x2), round(y2))
+    for start, end in zip(points[0::2], points[1::2]):
         pg.draw.line(surf, color, start, end, width)
 
 
-def load_frame_dict():
-    if 'frame_dict.json' in os.listdir():
-        with open('frame_dict.json') as f:
-            string = f.read()
-        return json.loads(string)
-    else:
-        return {}
-
-
-def write_frame_dict(frame_dict):
-    with open('frame_dict.json', 'w') as f:
-        f.write(json.dumps(frame_dict, indent=4))
-
-
 def random_text(length=4, chars='abcdefghijklmnopqrstuvwxyz', skip_list=[]):
-    n_loop = 0
-    while True:
-        res = '_' + (''.join(random.choice(chars) for _ in range(length)))
+    for _ in range(10):
+        res = '_' + ''.join(random.choice(chars) for _ in range(length))
         if res not in skip_list:
             return res
-        else:
-            n_loop += 1
-            if n_loop > 10:
-                length += 1
+    return random_text(length + 1, chars, skip_list)
 
 
-def put_text(surface, text, font, color, xy, anchors=None):
-    if len(color) == 2:
-        color, color2 = color
-    else:
-        color2 = None
+def put_text(surface, text, font, xy, color, color2=(255, 255, 255), anchor='center'):
     text_surface = font.render(text, True, color, color2)
     text_rect = text_surface.get_rect()
-    if anchors == 'topleft':
-        text_rect.topleft = xy
-    elif anchors == 'topright':
-        text_rect.topright = xy
-    elif anchors == 'bottomleft':
-        text_rect.bottomleft = xy
-    elif anchors == 'bottomright':
-        text_rect.bottomright = xy
-    else:
-        text_rect.center = xy
+    setattr(text_rect, anchor, xy)
     surface.blit(text_surface, text_rect)
 
 
@@ -295,9 +251,19 @@ class DrawApp:
 
         self.dp = pg.display.set_mode(self.window_size.tolist(), pg.RESIZABLE)
         self.manager = UIManager(self.dp.get_size(), theme_path=self.setup_theme())
-        self.frame_dict = load_frame_dict()
+        self.frame_dict = self.load_frame_json()
+        self.frame_dict_time = {}
         self.setup_ui()
         self.set_item_list()
+        self.not_wheel_list = [
+            self.panel0,
+            self.panel1,
+            self.panel2,
+            self.panel3,
+            self.show_list_button,
+            self.show_details_button
+        ]
+
         self.scale_factor = 1.0
         self.img_offset_vector = np.array([100, 0])
         self.start_point = self.stop_point = np.array([0, 0])
@@ -311,6 +277,17 @@ class DrawApp:
         self.can_drawing = True
         self.can_moving = True
         self.can_zoom = True
+
+    def load_frame_json(self, path='', json_name='frame_dict.json'):
+        file_path = os.path.join(path, json_name)
+        if not os.path.exists(file_path):
+            self.write_frame_json({}, file_path)
+        with open(file_path) as f:
+            return json.load(f)
+
+    def write_frame_json(self, frame_dict=None, json_path='frame_dict.json'):
+        with open(json_path, 'w') as f:
+            json.dump(frame_dict or self.frame_dict, f, indent=4)
 
     def setup_theme(self):
         self.theme = {
@@ -387,6 +364,12 @@ class DrawApp:
                     #         "title_bar_height": "20"
                 }
             },
+            "panel": {
+                "colours": {
+                    "dark_bg": "#F9F9F9",
+                    "normal_border": "#888"
+                },
+            },
             "selection_list": {
                 "colours": {
                     "dark_bg": "#F9F9F9",
@@ -399,12 +382,43 @@ class DrawApp:
                     "normal_text": "#000",
                     "text_cursor": "#000"
                 },
+            },
+
+            "horizontal_slider": {
+                "prototype": "#test_prototype_colours",
+
+                "colours": {
+                    "dark_bg": "rgb(240,240,240)"
+                },
+                "misc": {
+                    "shape": "rounded_rectangle",
+                    "shape_corner_radius": "10",
+                    "shadow_width": "2",
+                    "border_width": "1",
+                    "enable_arrow_buttons": "1"
+                }
+            },
+            "horizontal_slider.@arrow_button": {
+                "misc": {
+                    "shape": "rounded_rectangle",
+                    "shape_corner_radius": "8",
+                    "text_horiz_alignment_padding": "2"
+                }
+            },
+            "horizontal_slider.#sliding_button": {
+                "colours": {
+                    "normal_bg": "#F55",
+                    "hovered_bg": "#F00",
+                },
+                "misc": {
+                    "shape": "ellipse",
+                }
             }
         }
         self.theme['@delete_button'] = self.theme['#close_button']
         return self.theme
 
-    def set_panel0(self):
+    def panel0_setup(self):
         self.panel0 = UIWindow(rect=Rect((0, 0), (230, 200)),
                                manager=self.manager, resizable=True,
                                window_display_title='Details',
@@ -428,7 +442,11 @@ class DrawApp:
         self.t6 = UILabel(Rect((85, 24 * 5), (200, 24)), container=self.panel0, text=f':')
         self.t7 = UILabel(Rect((85, 24 * 6), (200, 24)), container=self.panel0, text=f':')
 
-    def set_panel1(self):
+    def panel0_update(self, events):
+        for event in events:
+            ...
+
+    def panel1_setup(self):
         self.panel1 = UIWindow(rect=Rect((0, 200), (230, 350)),
                                manager=self.manager, resizable=True,
                                window_display_title='List',
@@ -467,8 +485,12 @@ class DrawApp:
                                                'right': 'left',
                                                'left_target': self.add_button})
 
-    def set_panel2(self):
-        self.panel2 = UIWindow(rect=Rect((0, 550), (230, 350)),
+    def panel1_update(self, events):
+        for event in events:
+            ...
+
+    def panel2_setup(self):
+        self.panel2 = UIWindow(rect=Rect((0, 550), (230, 260)),
                                manager=self.manager, resizable=True,
                                window_display_title='Manual',
                                object_id=ObjectID(class_id='@panel_window',
@@ -482,10 +504,44 @@ class DrawApp:
         UILabel(relative_rect=Rect((100, 45 * 3 + 10), (100, 30)), container=self.panel2, text=': Move')
         UILabel(relative_rect=Rect((100, 45 * 4 + 10), (100, 30)), container=self.panel2, text=': Reset layout')
 
+    def panel2_update(self, events):
+        for event in events:
+            ...
+
+    def panel3_setup(self):
+        self.panel3 = UIPanel(Rect(-3, -55+3, self.window_size.tolist()[0]+6, 55), 1, self.manager,
+                              anchors={'top': 'bottom',
+                                       'left': 'left',
+                                       'bottom': 'bottom',
+                                       'right': 'right',
+                                       })
+        self.current_frame_n = 1
+        self.max_frame_n = 10
+        self.panel3_slider = UIHorizontalSlider(Rect(5, -25, self.window_size.tolist()[0]-5, 25), self.current_frame_n,
+                                                (1, self.max_frame_n), container=self.panel3,
+                                                anchors={'top': 'bottom',
+                                                         'left': 'left',
+                                                         'bottom': 'bottom',
+                                                         'right': 'right',
+                                                         }
+                                                )
+        self.panel3_label = UILabel(Rect(10, 0, 300, 30), '-', container=self.panel3)
+
+    def panel3_update(self, events):
+        for event in events:
+            # if event.type != 1024: print(event)
+            if event.type == 32876:  # slider update
+                if event.ui_object_id == 'panel.horizontal_slider':
+                    self.current_frame_n = event.value
+
+        self.panel3_label.set_text(f'{self.current_frame_n}/{self.max_frame_n}')
+        self.panel3_slider.value_range = (1, self.max_frame_n)
+
     def setup_ui(self):
-        self.set_panel0()
-        self.set_panel1()
-        self.set_panel2()
+        self.panel0_setup()
+        self.panel1_setup()
+        self.panel2_setup()
+        self.panel3_setup()
 
         # panel0 Manual
         self.show_details_button = UIButton(relative_rect=Rect((300, 0), (70, 30)), text='Details',
@@ -499,7 +555,7 @@ class DrawApp:
 
     def set_item_list(self):
         self.rect_list.set_item_list(zip(self.frame_dict.keys(), self.frame_dict.keys()))
-        write_frame_dict(self.frame_dict)
+        self.write_frame_json()
 
     def get_point_on_img_surface(self):
         return (self.mouse_pos - self.canter_img_pos + self.img_size_vector / 2) / self.img_size_vector
@@ -509,6 +565,7 @@ class DrawApp:
         pil_image = pil_image.resize((int(pil_image.size[0] * 0.5), int(pil_image.size[1] * 0.5)))
         self.mouse_icon_surface = pg.image.frombuffer(pil_image.tobytes(), pil_image.size, pil_image.mode)
 
+    # todo
     def get_surface_from_display_capture(self):
         pil_image = ImageGrab.grab()
         self.img_surface = pg.image.frombuffer(pil_image.tobytes(), pil_image.size, pil_image.mode)
@@ -516,6 +573,7 @@ class DrawApp:
             int(self.img_surface.get_width() * self.scale_factor),
             int(self.img_surface.get_height() * self.scale_factor)))
 
+    # todo
     def get_surface_from_file(self, path: str):
         pil_image = Image.open(path)
         self.img_surface = pg.image.frombuffer(pil_image.tobytes(), pil_image.size, pil_image.mode)
@@ -531,6 +589,17 @@ class DrawApp:
         if _:
             self.img_np = img
 
+    def setup_video_file(self, path):
+        self.cap = cv2.VideoCapture(path)
+        self.max_frame_n = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    def get_np_form_video_file(self):
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_n)
+        _, img = self.cap.read()
+        if _:
+            self.img_np = img
+        self.get_surface_form_np()
+
     def get_np_form_url(self, url):
         req = urllib.request.urlopen(url)
         arr = np.asarray(bytearray(req.read()), dtype=np.uint8)
@@ -541,6 +610,14 @@ class DrawApp:
         self.scaled_img_surface = pg.transform.scale(self.img_surface, (
             int(self.img_surface.get_width() * self.scale_factor),
             int(self.img_surface.get_height() * self.scale_factor)))
+
+    def get_surface_form_video_file(self):
+        self.get_np_form_video_file()
+        self.get_surface_form_np()
+
+    def get_surface_form_url(self, url):
+        self.get_np_form_url(url)
+        self.get_surface_form_np()
 
     def handle_window_resize(self, event):
         minimum = (500, 500)
@@ -555,13 +632,7 @@ class DrawApp:
             self.manager.set_window_resolution(self.window_size.tolist())
 
     def get_can_wheel(self):
-        return not any([obj.rect.collidepoint(self.mouse_pos) for obj in [
-            self.panel0,
-            self.panel1,
-            self.panel2,
-            self.show_list_button,
-            self.show_details_button
-        ]])
+        return not any([obj.rect.collidepoint(self.mouse_pos) for obj in self.not_wheel_list])
 
     def wheel_drawing_moving(self, event):
         # mouse pos เทียบกับซ้ายบน  _px
@@ -626,7 +697,9 @@ class DrawApp:
             if event.type == pg.MOUSEBUTTONUP and event.button == 1:
                 self.drawing = False
 
-    def panels(self, events):
+    def update_panels(self, events):
+        self.panel3_update(events)
+
         for event in events:
             # enable or disable
             if event.type == 32867:
@@ -642,10 +715,8 @@ class DrawApp:
 
             # add item in frame_dict
             if event.type == UI_BUTTON_PRESSED and event.ui_element == self.add_button:
-                name = self.name_entry.get_text()
+                name = self.name_entry.get_text() or random_text(skip_list=list(self.frame_dict.keys()))
                 self.name_entry.set_text('')
-                if name == '':
-                    name = random_text(skip_list=list(self.frame_dict.keys()))
                 if not self.frame_dict.get(name):
                     self.frame_dict[name] = {}
                 self.frame_dict[name]['xywh'] = self.xywh.tolist()
@@ -664,9 +735,9 @@ class DrawApp:
 
             # show or hide panels
             if event.type == UI_BUTTON_PRESSED and event.ui_element == self.show_details_button:
-                self.set_panel0()
+                self.panel0_setup()
             if event.type == UI_BUTTON_PRESSED and event.ui_element == self.show_list_button:
-                self.set_panel1()
+                self.panel1_setup()
             if event.type == UI_BUTTON_PRESSED:
                 if event.ui_object_id == '#details.panel_window.#close_button':
                     self.panel0.set_position((-300, 0))
@@ -719,8 +790,7 @@ class DrawApp:
             pg.draw.rect(self.scaled_img_surface, (200, 255, 0), Rect(_x1y1wh_px.tolist()), 1)
 
             font = pg.font.Font(None, 16)
-            color = [(0, 0, 255), (255, 255, 255)]
-            put_text(self.scaled_img_surface, f"{k}", font, color, _x1y1wh_px[:2], 'bottomleft')
+            put_text(self.scaled_img_surface, f"{k}", font, _x1y1wh_px[:2], (0, 0, 255), anchor='bottomleft')
 
         # scaled_img_surface to dp
         self.dp.blit(self.scaled_img_surface,
@@ -734,10 +804,10 @@ class DrawApp:
             self.dp.fill((180, 180, 180))
             # get image surface
             # self.get_surface_from_display_capture()
-            # self.get_surface_from_file('image/img (1).jpg')
+            self.get_surface_from_file('image/img (1).jpg')
             # self.get_surface()
-            self.get_np_form_url('http://192.168.225.137:2000/old-image')
-            self.get_surface_form_np()
+            # self.get_np_form_url('http://192.168.225.137:2000/old-image')
+            # self.get_surface_form_np()
             events = pg.event.get()
             for event in events:
                 self.manager.process_events(event)
@@ -750,7 +820,7 @@ class DrawApp:
                     # if event.type == UI_BUTTON_PRESSED:
                     print(event)
 
-            self.panels(events)
+            self.update_panels(events)
             self.show_rects_to_surface(self.frame_dict)
             self.manager.update(time_delta)
             self.manager.draw_ui(self.dp)

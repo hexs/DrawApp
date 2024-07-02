@@ -5,6 +5,9 @@ __pycache__/
 crop/
 output/
 
+videos
+test.py
+
 frame_dict.json
 class_names.json
 model_name.h5
