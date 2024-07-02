@@ -60,6 +60,7 @@ class Manage(DrawApp.DrawApp):
                         self.get_frame_from_frame_dict_time()
                 if event.type == pg.KEYDOWN:
                     if event.kay == 1073741903: #r:
+                        pass
 
 
             self.show_rects_to_surface(self.frame_dict)
