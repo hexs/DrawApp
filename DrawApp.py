@@ -278,8 +278,8 @@ class DrawApp:
         self.can_moving = True
         self.can_zoom = True
 
-    def load_frame_json(self, path='', json_name='frame_dict.json'):
-        file_path = os.path.join(path, json_name)
+    def load_frame_json(self, path='', json_file_name='frame_dict.json'):
+        file_path = os.path.join(path, json_file_name)
         if not os.path.exists(file_path):
             self.write_frame_json({}, file_path)
         with open(file_path) as f:
@@ -509,7 +509,7 @@ class DrawApp:
             ...
 
     def panel3_setup(self):
-        self.panel3 = UIPanel(Rect(-3, -55+3, self.window_size.tolist()[0]+6, 55), 1, self.manager,
+        self.panel3 = UIPanel(Rect(-3, -55 + 3, self.window_size.tolist()[0] + 6, 55), 1, self.manager,
                               anchors={'top': 'bottom',
                                        'left': 'left',
                                        'bottom': 'bottom',
@@ -517,7 +517,8 @@ class DrawApp:
                                        })
         self.current_frame_n = 1
         self.max_frame_n = 10
-        self.panel3_slider = UIHorizontalSlider(Rect(5, -25, self.window_size.tolist()[0]-5, 25), self.current_frame_n,
+        self.panel3_slider = UIHorizontalSlider(Rect(5, -25, self.window_size.tolist()[0] - 5, 25),
+                                                self.current_frame_n,
                                                 (1, self.max_frame_n), container=self.panel3,
                                                 anchors={'top': 'bottom',
                                                          'left': 'left',

@@ -6,6 +6,7 @@ crop/
 output/
 
 videos
+output_for_YOLO
 test.py
 
 frame_dict.json
